@@ -41,6 +41,7 @@
         android:layout_centerInParent="true">
 
         <ImageView
+            android:layout_alignParentTop="true"
             android:id="@+id/trash_pic"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -48,15 +49,29 @@
             android:visibility="gone"
              />
 
+
+
+        <Button
+            android:id="@+id/leave_button"
+            android:layout_width="300dp"
+            android:layout_height="wrap_content"
+            android:background="@drawable/my_button_bg"
+            android:textSize="16sp"
+            android:text="This is option 2"
+            android:visibility="gone"
+            android:layout_alignParentBottom="true"
+            />
+
         <Button
             android:id="@+id/pickup_button"
             android:layout_width="300dp"
             android:layout_height="wrap_content"
-            android:background="@android:color/white"
+            android:background="@drawable/my_button_bg"
             android:textSize="16sp"
             android:text="This is option 1"
             android:visibility="gone"
-            android:layout_alignParentBottom="true"/>
+            android:layout_above="@id/leave_button"
+            />
 
     </RelativeLayout>
 

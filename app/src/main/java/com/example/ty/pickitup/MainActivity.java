@@ -86,6 +86,8 @@ public class MainActivity extends AppCompatActivity
     private Uri imageUri;
 
 
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -146,6 +148,7 @@ public class MainActivity extends AppCompatActivity
                     getContentResolver().notifyChange(selectedImage, null);
                     ImageView imageView = (ImageView) findViewById(R.id.trash_pic);
                     Button pickupButton = (Button) findViewById(R.id.pickup_button);
+                    Button leaveButton = (Button) findViewById(R.id.leave_button);
                     ContentResolver cr = getContentResolver();
                     Bitmap bitmap;
                     try {
@@ -155,7 +158,7 @@ public class MainActivity extends AppCompatActivity
                         imageView.setImageBitmap(bitmap);
                         imageView.setVisibility(View.VISIBLE);
                         pickupButton.setVisibility(View.VISIBLE);
-
+                        leaveButton.setVisibility(View.VISIBLE);
                         Toast.makeText(this, selectedImage.toString(),
                                 Toast.LENGTH_LONG).show();
                     } catch (Exception e) {
