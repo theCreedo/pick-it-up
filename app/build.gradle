@@ -1,13 +1,15 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 24
+    compileSdkVersion 23
     buildToolsVersion "24.0.1"
-
+    dexOptions {
+        javaMaxHeapSize "4g"
+    }
     defaultConfig {
         applicationId "com.example.ty.pickitup"
         minSdkVersion 15
-        targetSdkVersion 24
+        targetSdkVersion 23
         multiDexEnabled true
 
         versionCode 1
