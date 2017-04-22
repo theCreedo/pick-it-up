@@ -159,7 +159,8 @@ public class MainActivity extends AppCompatActivity
                 // Put a marker
                 MarkerOptions trashMarker = new MarkerOptions();
                 trashMarker.anchor(0.5f,0.5f);
-                //trashMarker.icon(BitmapDescriptorFactory.fromResource(R.drawable.character));
+
+                trashMarker.icon(BitmapDescriptorFactory.fromResource(R.drawable.trash));
                 trashMarker.position(new LatLng(mLatitude, mLongitude));
                 findViewById(R.id.camera_container).setVisibility(View.GONE);
                 Marker marker =mMap.addMarker(trashMarker);
@@ -522,7 +523,7 @@ public class MainActivity extends AppCompatActivity
                 Toast.makeText(getApplicationContext(), "You're too far away from this litter", Toast.LENGTH_SHORT).show();
             }
         }
-        return false;
+        return true;
     }
 
 
