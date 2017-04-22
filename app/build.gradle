@@ -8,7 +8,7 @@ android {
     }
     defaultConfig {
         applicationId "com.example.ty.pickitup"
-        minSdkVersion 15
+        minSdkVersion 16
         targetSdkVersion 23
         multiDexEnabled true
 
@@ -25,6 +25,9 @@ android {
 
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
+
     compile 'com.android.support:appcompat-v7:24.2.0'
     compile 'com.google.android.gms:play-services:9.6.1'
+    compile 'com.microsoft.projectoxford:vision:0.5.0'
+    compile 'com.android.support:support-v4:23.4.0'
 }

@@ -14,12 +14,17 @@ import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewStub;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
@@ -47,6 +52,8 @@ import com.google.android.gms.maps.model.MarkerOptions;
 
 import java.io.File;
 
+import static java.security.AccessController.getContext;
+
 /**
  * An activity that displays a map showing the place at the device's current location.
  */
@@ -62,6 +69,8 @@ public class MainActivity extends AppCompatActivity
     private CameraPosition mCameraPosition;
     private SharedPreferences preferences;
     private double mLatitude, mLongitude;
+    private ViewStub stub;
+    private View stub_layout;
 
     // The entry point to Google Play services, used by the Places API and Fused Location Provider.
     private GoogleApiClient mGoogleApiClient;
@@ -153,9 +162,16 @@ public class MainActivity extends AppCompatActivity
                 //trashMarker.icon(BitmapDescriptorFactory.fromResource(R.drawable.character));
                 trashMarker.position(new LatLng(mLatitude, mLongitude));
                 findViewById(R.id.camera_container).setVisibility(View.GONE);
-
+                Marker marker =mMap.addMarker(trashMarker);
+                marker.setTag("trash");
             }
         });
+
+        // Stub for when you pick up garbage
+        stub = (ViewStub) findViewById(R.id.viewStub1);
+        stub_layout = stub.inflate();
+
+
     }
 
 
@@ -457,24 +473,57 @@ public class MainActivity extends AppCompatActivity
 
     }
 
+
+
     @Override
     public boolean onMarkerClick(Marker marker) {
-        LatLng markerLoc = marker.getPosition();
-        Location locMarker = new Location("");
-        locMarker.setLatitude(markerLoc.latitude);
-        locMarker.setLongitude(markerLoc.longitude);
+        if(marker.getTag() == "trash") {
+            LatLng markerLoc = marker.getPosition();
+            Location locMarker = new Location("");
+            locMarker.setLatitude(markerLoc.latitude);
+            locMarker.setLongitude(markerLoc.longitude);
 
-        Location locUser = new Location("");
-        locUser.setLatitude(mLatitude);
-        locUser.setLongitude(mLongitude);
+            Location locUser = new Location("");
+            locUser.setLatitude(mLatitude);
+            locUser.setLongitude(mLongitude);
 
-        if(locMarker.distanceTo(locUser) < 50.0) {
-            System.out.println("fuck you")
-                    ;
-        } else {
-            Toast.makeText(getApplicationContext(), "You're too far away from this litter", Toast.LENGTH_SHORT).show();
+            if (locMarker.distanceTo(locUser) < 50.0) {
+                System.out.println("fuck you")
+                ;
+                stub_layout.setVisibility(View.VISIBLE);
+                ImageView image = (ImageView) stub_layout.findViewById(R.id.achievement_icon);
+                final Animation anim = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.translate_in);
+                image.startAnimation(anim);
+
+                image.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        Animation animOut = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.alpha_out);
+                        stub_layout.startAnimation(animOut);
+                        animOut.setAnimationListener(new Animation.AnimationListener() {
+                            @Override
+                            public void onAnimationStart(Animation animation) {
+
+                            }
+
+                            @Override
+                            public void onAnimationEnd(Animation animation) {
+                                stub_layout.setVisibility(View.INVISIBLE);
+                            }
+
+                            @Override
+                            public void onAnimationRepeat(Animation animation) {
+
+                            }
+                        });
+                    }
+                });
+            } else {
+                Toast.makeText(getApplicationContext(), "You're too far away from this litter", Toast.LENGTH_SHORT).show();
+            }
         }
-
         return false;
     }
+
+
 }

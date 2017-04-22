@@ -9,7 +9,6 @@ public class Achievement {
     public Achievement(String type, int number) {
         this.type = type;
         this.number = number;
-        this.image = image;
     }
 
     public String type(){

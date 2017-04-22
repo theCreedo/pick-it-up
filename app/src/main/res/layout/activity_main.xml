@@ -88,6 +88,14 @@
         android:padding="8dp"
         android:src="@drawable/ic_camera_black_36dp" />
 
+    <ViewStub
+        android:id="@+id/viewStub1"
+        android:layout="@layout/fragment_garbage2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_alignParentTop="true" />
+
 </RelativeLayout>
 
 
