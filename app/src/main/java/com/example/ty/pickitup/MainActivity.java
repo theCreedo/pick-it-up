@@ -4,12 +4,11 @@ import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.ContentResolver;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
-import android.graphics.Color;
 import android.location.Location;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
@@ -54,12 +53,15 @@ import java.io.File;
 public class MainActivity extends AppCompatActivity
         implements OnMapReadyCallback, LocationListener,
         GoogleApiClient.ConnectionCallbacks,
-        GoogleApiClient.OnConnectionFailedListener {
+        GoogleApiClient.OnConnectionFailedListener,
+        GoogleMap.OnMarkerClickListener {
 
     private final int DURATION = 2000;
     private static final String TAG = MainActivity.class.getSimpleName();
     private GoogleMap mMap;
     private CameraPosition mCameraPosition;
+    private SharedPreferences preferences;
+    private double mLatitude, mLongitude;
 
     // The entry point to Google Play services, used by the Places API and Fused Location Provider.
     private GoogleApiClient mGoogleApiClient;
@@ -80,6 +82,7 @@ public class MainActivity extends AppCompatActivity
     // Keys for storing activity state.
     private static final String KEY_CAMERA_POSITION = "camera_position";
     private static final String KEY_LOCATION = "location";
+    private ImageView cameraView;
 
     // Camera Stuff
     private static final int TAKE_PICTURE = 1;
@@ -97,6 +100,8 @@ public class MainActivity extends AppCompatActivity
             mLastKnownLocation = savedInstanceState.getParcelable(KEY_LOCATION);
             mCameraPosition = savedInstanceState.getParcelable(KEY_CAMERA_POSITION);
         }
+
+        preferences = getPreferences(MODE_PRIVATE);
 
         // Retrieve the content view that renders the map.
         setContentView(R.layout.activity_main);
@@ -127,7 +132,32 @@ public class MainActivity extends AppCompatActivity
             }
         });
 
+        Button pickupButton = (Button) findViewById(R.id.pickup_button);
+        Button leaveButton = (Button) findViewById(R.id.leave_button);
+
+        pickupButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                int count = preferences.getInt("litter_count", 0);
+                preferences.edit().putInt("litter_count", ++count);
+                findViewById(R.id.camera_container).setVisibility(View.GONE);
+            }
+        });
+
+        leaveButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // Put a marker
+                MarkerOptions trashMarker = new MarkerOptions();
+                trashMarker.anchor(0,0);
+                //trashMarker.icon(BitmapDescriptorFactory.fromResource(R.drawable.character));
+                trashMarker.position(new LatLng(mLatitude, mLongitude));
+                findViewById(R.id.camera_container).setVisibility(View.GONE);
+
+            }
+        });
     }
+
 
     public void takePhoto(View view) {
         Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
@@ -143,10 +173,12 @@ public class MainActivity extends AppCompatActivity
         super.onActivityResult(requestCode, resultCode, data);
         switch (requestCode) {
             case TAKE_PICTURE:
+                findViewById(R.id.camera_container).setVisibility(View.VISIBLE);
+
                 if (resultCode == Activity.RESULT_OK) {
                     Uri selectedImage = imageUri;
                     getContentResolver().notifyChange(selectedImage, null);
-                    ImageView imageView = (ImageView) findViewById(R.id.trash_pic);
+                    cameraView = (ImageView) findViewById(R.id.trash_pic);
                     Button pickupButton = (Button) findViewById(R.id.pickup_button);
                     Button leaveButton = (Button) findViewById(R.id.leave_button);
                     ContentResolver cr = getContentResolver();
@@ -155,8 +187,8 @@ public class MainActivity extends AppCompatActivity
                         bitmap = android.provider.MediaStore.Images.Media
                                 .getBitmap(cr, selectedImage);
 
-                        imageView.setImageBitmap(bitmap);
-                        imageView.setVisibility(View.VISIBLE);
+                        cameraView.setImageBitmap(bitmap);
+                        cameraView.setVisibility(View.VISIBLE);
                         pickupButton.setVisibility(View.VISIBLE);
                         leaveButton.setVisibility(View.VISIBLE);
                         Toast.makeText(this, selectedImage.toString(),
@@ -269,6 +301,7 @@ public class MainActivity extends AppCompatActivity
         boolean success = mMap.setMapStyle(MapStyleOptions.loadRawResourceStyle(this, R.raw.map_style));
         // Use a custom info window adapter to handle multiple lines of text in the
         // info window contents.
+        mMap.setOnMarkerClickListener(this);
         mMap.setInfoWindowAdapter(new GoogleMap.InfoWindowAdapter() {
 
             @Override
@@ -324,6 +357,9 @@ public class MainActivity extends AppCompatActivity
             mLastKnownLocation = LocationServices.FusedLocationApi
                     .getLastLocation(mGoogleApiClient);
         }
+
+        mLatitude = mLastKnownLocation.getLatitude();
+        mLongitude = mLastKnownLocation.getLongitude();
 
         // Set the map's camera position to the current location of the device.
         if (mCameraPosition != null) {
@@ -399,6 +435,8 @@ public class MainActivity extends AppCompatActivity
 
         //Bitmap bitmap = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.character);
         //BitmapDescriptor icon = BitmapDescriptorFactory.fromBitmap(bitmap);
+        mLatitude = location.getLatitude();
+        mLongitude = location.getLongitude();
 
         if(mMarker == null) {
             MarkerOptions mp = new MarkerOptions();
@@ -415,5 +453,26 @@ public class MainActivity extends AppCompatActivity
         mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(
                 new LatLng(location.getLatitude(), location.getLongitude()), mMap.getCameraPosition().zoom));
 
+    }
+
+    @Override
+    public boolean onMarkerClick(Marker marker) {
+        LatLng markerLoc = marker.getPosition();
+        Location locMarker = new Location("");
+        locMarker.setLatitude(markerLoc.latitude);
+        locMarker.setLongitude(markerLoc.longitude);
+
+        Location locUser = new Location("");
+        locUser.setLatitude(mLatitude);
+        locUser.setLongitude(mLongitude);
+
+        if(locMarker.distanceTo(locUser) < 50.0) {
+            System.out.println("fuck you")
+                    ;
+        } else {
+            Toast.makeText(getApplicationContext(), "You're too far away from this litter", Toast.LENGTH_SHORT).show();
+        }
+
+        return false;
     }
 }

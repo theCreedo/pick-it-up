@@ -34,6 +34,7 @@
         android:src="@drawable/ic_settings_black_36dp" />
 
     <RelativeLayout
+        android:id="@+id/camera_container"
         android:layout_width="280dp"
         android:layout_height="wrap_content"
         android:paddingBottom="72dp"
@@ -57,7 +58,7 @@
             android:layout_height="wrap_content"
             android:background="@drawable/my_button_bg"
             android:textSize="16sp"
-            android:text="This is option 2"
+            android:text="Mark Trash"
             android:visibility="gone"
             android:layout_alignParentBottom="true"
             />
@@ -68,7 +69,7 @@
             android:layout_height="wrap_content"
             android:background="@drawable/my_button_bg"
             android:textSize="16sp"
-            android:text="This is option 1"
+            android:text="Pickup Trash"
             android:visibility="gone"
             android:layout_above="@id/leave_button"
             />
