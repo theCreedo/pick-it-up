@@ -1,5 +1,6 @@
 package com.example.ty.pickitup;
 
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.ContentResolver;
 import android.content.Intent;
@@ -8,6 +9,7 @@ import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.location.Location;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
@@ -106,6 +108,14 @@ public class MainActivity extends AppCompatActivity
                 .addApi(LocationServices.API)
                 .build();
         mGoogleApiClient.connect();
+        ImageButton achievementsButton = (ImageButton) findViewById(R.id.achievements_button);
+        achievementsButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent i = new Intent(MainActivity.this, AchievementsActivity.class);
+                startActivity(i);
+            }
+        });
         ImageButton cameraButton = (ImageButton) findViewById(R.id.camera_button);
         cameraButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -114,11 +124,12 @@ public class MainActivity extends AppCompatActivity
 
             }
         });
+
     }
 
     public void takePhoto(View view) {
         Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        File photo = new File(Environment.getExternalStorageDirectory(),  "Pic.jpg");
+        File photo = new File(Environment.getExternalStorageDirectory(), "Pic.jpg");
         intent.putExtra(MediaStore.EXTRA_OUTPUT,
                 Uri.fromFile(photo));
         imageUri = Uri.fromFile(photo);
@@ -181,6 +192,7 @@ public class MainActivity extends AppCompatActivity
     }
 
     // Trigger new location updates at interval
+    @TargetApi(23)
     protected void startLocationUpdates() {
         // Create the location request
         mLocationRequest = LocationRequest.create()
@@ -188,8 +200,18 @@ public class MainActivity extends AppCompatActivity
                 .setInterval(DURATION)
                 .setFastestInterval(DURATION);
         // Request location updates
+        if (checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && checkSelfPermission(android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    public void requestPermissions(@NonNull String[] permissions, int requestCode)
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for Activity#requestPermissions for more details.
+            return;
+        }
         LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient,
-                mLocationRequest,  this);
+                mLocationRequest, this);
     }
 
     /**
