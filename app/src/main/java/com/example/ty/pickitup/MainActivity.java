@@ -149,7 +149,7 @@ public class MainActivity extends AppCompatActivity
             public void onClick(View v) {
                 // Put a marker
                 MarkerOptions trashMarker = new MarkerOptions();
-                trashMarker.anchor(0,0);
+                trashMarker.anchor(0.5f,0.5f);
                 //trashMarker.icon(BitmapDescriptorFactory.fromResource(R.drawable.character));
                 trashMarker.position(new LatLng(mLatitude, mLongitude));
                 findViewById(R.id.camera_container).setVisibility(View.GONE);
@@ -442,9 +442,11 @@ public class MainActivity extends AppCompatActivity
             MarkerOptions mp = new MarkerOptions();
             mp.position(new LatLng(location.getLatitude(), location.getLongitude()));
             mp.icon(BitmapDescriptorFactory.fromResource(R.drawable.checkbox_blank_circle));
+            mp.anchor(0.5f,0.5f);
             mp.title("my position");
 
             mMarker = mMap.addMarker(mp);
+
         } else {
 
             MarkerAnimate.animateMarkerToGB(mMarker, new LatLng(location.getLatitude(), location.getLongitude()), linear,  DURATION);
