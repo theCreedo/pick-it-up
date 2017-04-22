@@ -201,13 +201,12 @@ public class MainActivity extends AppCompatActivity
                 .setInterval(DURATION)
                 .setFastestInterval(DURATION);
         // Request location updates
-        if (checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && checkSelfPermission(android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(MainActivity.this,
-                                new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
-//            ActivityCompat.OnRequestPermissionsResultCallback
-
-            return;
-        }
+//        if (checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && checkSelfPermission(android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+//            ActivityCompat.requestPermissions(MainActivity.this,
+//                                new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION}, 1);
+//
+//            return;
+//        }
         LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient,
                 mLocationRequest, this);
     }

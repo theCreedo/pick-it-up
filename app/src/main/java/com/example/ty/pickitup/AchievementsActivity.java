@@ -15,9 +15,9 @@ import java.util.ArrayList;
 public class AchievementsActivity extends AppCompatActivity {
 
     private static final String[] CATEGORIES =
-                                {"litter", "water bottles", "plastic bags", "fast-food"};
+                                {"litter", "water bottles", "plastic bags"};
 
-    private static final int[] LEVELS = {1, 10 ,25, 50, 100, 500, 1000};
+    private static final int[] LEVELS = {1, 10, 50};
 
 
     @Override
@@ -31,6 +31,16 @@ public class AchievementsActivity extends AppCompatActivity {
                 achievements.add(new Achievement(CATEGORIES[i], LEVELS[j]));
             }
         }
+        achievements.get(0).setImage(R.mipmap.ic_litter_green);
+        achievements.get(1).setImage(R.mipmap.ic_litter_blue);
+        achievements.get(2).setImage(R.mipmap.ic_litter_gold);
+        achievements.get(3).setImage(R.mipmap.ic_bottle_green);
+        achievements.get(4).setImage(R.mipmap.ic_bottle_blue_v2);
+        achievements.get(5).setImage(R.mipmap.ic_bottle_gold);
+        achievements.get(6).setImage(R.mipmap.ic_bag_green);
+        achievements.get(7).setImage(R.mipmap.ic_bag_blue);
+        achievements.get(8).setImage(R.mipmap.ic_bag_gold);
+
 
         AchievementAdapter adapter = new AchievementAdapter(this, achievements);
 

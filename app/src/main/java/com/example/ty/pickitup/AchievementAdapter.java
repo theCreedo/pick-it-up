@@ -48,7 +48,7 @@ public class AchievementAdapter extends ArrayAdapter<Achievement> {
         ImageView image = (ImageView) listItemView.findViewById(R.id.achievement_icon);
         LinearLayout linearLayout = (LinearLayout) listItemView.findViewById(R.id.text_container);
         type.setText(currentAchievement.type());
-        number.setText(currentAchievement.level());
+        number.setText(Integer.toString(currentAchievement.level()));
         image.setImageResource(currentAchievement.image());
         image.setVisibility(View.VISIBLE);
 
