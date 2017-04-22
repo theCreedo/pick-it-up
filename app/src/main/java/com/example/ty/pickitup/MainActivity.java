@@ -145,7 +145,7 @@ public class MainActivity extends AppCompatActivity
                     Uri selectedImage = imageUri;
                     getContentResolver().notifyChange(selectedImage, null);
                     ImageView imageView = (ImageView) findViewById(R.id.trash_pic);
-                    Button optionButton = (Button) findViewById(R.id.option_button);
+                    Button pickupButton = (Button) findViewById(R.id.pickup_button);
                     ContentResolver cr = getContentResolver();
                     Bitmap bitmap;
                     try {
@@ -154,7 +154,8 @@ public class MainActivity extends AppCompatActivity
 
                         imageView.setImageBitmap(bitmap);
                         imageView.setVisibility(View.VISIBLE);
-                        optionButton.setVisibility(View.VISIBLE);
+                        pickupButton.setVisibility(View.VISIBLE);
+
                         Toast.makeText(this, selectedImage.toString(),
                                 Toast.LENGTH_LONG).show();
                     } catch (Exception e) {
@@ -201,18 +202,17 @@ public class MainActivity extends AppCompatActivity
                 .setFastestInterval(DURATION);
         // Request location updates
         if (checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && checkSelfPermission(android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    public void requestPermissions(@NonNull String[] permissions, int requestCode)
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for Activity#requestPermissions for more details.
+            ActivityCompat.requestPermissions(MainActivity.this,
+                                new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
+//            ActivityCompat.OnRequestPermissionsResultCallback
+
             return;
         }
         LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient,
                 mLocationRequest, this);
     }
+
+
 
     /**
      * Handles failure to connect to the Google Play services client.
