@@ -87,7 +87,6 @@ public class MainActivity extends AppCompatActivity
 
     ArrayList<LatLng> liveData = new ArrayList<>();
     ArrayList<LatLng> deadData = new ArrayList<>();
-
     private final int DURATION = 2000;
     private static final String TAG = MainActivity.class.getSimpleName();
     private GoogleMap mMap;
@@ -217,23 +216,8 @@ public class MainActivity extends AppCompatActivity
         stub = (ViewStub) findViewById(R.id.viewStub1);
         stub_layout = stub.inflate();
 
-
     }
 
-    public void test(LatLng current) {
-        double latitude = current.latitude;
-        double longitude = current.longitude;
-        double southLatitude = latitude - (latitude % OVERLAY_SIZE);
-        double westLongitude = longitude - (longitude % OVERLAY_SIZE);
-        double northLatitude = southLatitude + OVERLAY_SIZE;
-        double eastLongitude = westLongitude + OVERLAY_SIZE;
-        LatLng sw = new LatLng(southLatitude, westLongitude);
-        LatLng ne = new LatLng(northLatitude, eastLongitude);
-        LatLngBounds bound = new LatLngBounds(sw, ne);
-        System.out.println("SW " + southLatitude + " " + westLongitude + " NE " + northLatitude + " " + eastLongitude);
-        GroundOverlayOptions g = new GroundOverlayOptions().positionFromBounds(bound).image(OVERLAY_IMAGES[0]);
-        mMap.addGroundOverlay(g);
-    }
 
     public void takePhoto(View view) {
         Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
@@ -437,7 +421,7 @@ public class MainActivity extends AppCompatActivity
                     JSONArray arr_dead = (JSONArray) args[1];
                     System.out.println("In call: arr_live length " + arr_live.length());
                     System.out.println("In call: arr_Dead length " + arr_dead.length());
-
+                    liveData = new ArrayList<>();
                     for (int i = 0; i < arr_live.length(); ++i) {
                         try {
                             JSONObject obj = arr_live.getJSONObject(i);
@@ -452,7 +436,7 @@ public class MainActivity extends AppCompatActivity
                         }
                     }
 
-
+                    deadData = new ArrayList<>();
                     for (int i = 0; i < arr_dead.length(); ++i) {
                         try {
                             JSONObject obj = arr_dead.getJSONObject(i);
@@ -475,14 +459,14 @@ public class MainActivity extends AppCompatActivity
                 public void run() {
                     socket.emit("poll", ack);
                     System.out.println("EMISSIONS");
-                    handler.postDelayed(this, 30000);
+                    handler.postDelayed(this, 5000);
                     updateEverything(liveData, deadData);
                 }
             }, 0);
 
-            OVERLAY_IMAGES[0] = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN);
-            OVERLAY_IMAGES[1] = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW);
-            OVERLAY_IMAGES[2] = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED);
+            OVERLAY_IMAGES[0] = BitmapDescriptorFactory.fromResource(R.drawable.green);
+            OVERLAY_IMAGES[1] = BitmapDescriptorFactory.fromResource(R.drawable.yellow);
+            OVERLAY_IMAGES[2] = BitmapDescriptorFactory.fromResource(R.drawable.red);
 
 
 
@@ -698,8 +682,8 @@ public class MainActivity extends AppCompatActivity
     // If dead and not in map --> update ground overlay with all fresh dead data
 
 
-    private HashMap<String, GroundOverlay> overlayMap;
-    private HashMap<String, Integer> litterMap;
+    private HashMap<String, GroundOverlay> overlayMap = new HashMap<>();
+    private HashMap<String, Integer> litterMap = new HashMap<>();
     private HashSet<String> markedSet;
 
     private static final int[] LEVELS = {1, 25, 50};
@@ -709,10 +693,8 @@ public class MainActivity extends AppCompatActivity
     private static BitmapDescriptor[] OVERLAY_IMAGES = new BitmapDescriptor[3];
 
 
-
     public void updateMaps(ArrayList<LatLng> deadData) {
-        overlayMap = new HashMap<>();
-        litterMap = new HashMap<>();
+        litterMap.clear();
         for (int i = 0; i < deadData.size(); i++) {
             // Represents a quadrant that could be covered by a ground overlay
             LatLngBounds bound = getStringToHash(deadData.get(i));
@@ -733,6 +715,7 @@ public class MainActivity extends AppCompatActivity
                     if (newLitterCount == LEVELS[j]) {
                         GroundOverlay g = overlayMap.get(hashBound);
                         g.setImage(OVERLAY_IMAGES[j]);
+                        g.setTransparency(.75f);
                     }
                 }
             }
@@ -741,15 +724,14 @@ public class MainActivity extends AppCompatActivity
             // to the overlayMap
             else {
                 litterMap.put(hashBound, 1);
-                System.out.println("\n\nCreating new overlay!!!!!\n\n");
-                System.out.println("\n\nBound = " + getLatLngString(bound.southwest) + " " + getLatLngString(bound.northeast));
-                GroundOverlayOptions g = new GroundOverlayOptions()
-                        .positionFromBounds(bound)
-                        .visible(true)
-                        .image(OVERLAY_IMAGES[0])
-                        .transparency(.5f);
-                overlayMap.put(hashBound, mMap.addGroundOverlay(g));
-
+                if(!overlayMap.containsKey(hashBound)) {
+                    GroundOverlayOptions g = new GroundOverlayOptions()
+                            .positionFromBounds(bound)
+                            .visible(true)
+                            .image(OVERLAY_IMAGES[0])
+                            .transparency(.75f);
+                    overlayMap.put(hashBound, mMap.addGroundOverlay(g));
+                }
             }
         }
     }
@@ -760,15 +742,21 @@ public class MainActivity extends AppCompatActivity
         // I def did not handle longitude/latitude overflow/underflow
         double latitude = current.latitude;
         double longitude = current.longitude;
-        double southLatitude = latitude - (latitude % OVERLAY_SIZE);
-        double westLongitude = longitude - (longitude % OVERLAY_SIZE);
-        double northLatitude = southLatitude + OVERLAY_SIZE;
-        double eastLongitude = westLongitude + OVERLAY_SIZE;
+        double southLatitude = roundToTwoPlaces(latitude - Math.abs(latitude % OVERLAY_SIZE));
+        double westLongitude = roundToTwoPlaces(longitude - Math.abs(longitude % OVERLAY_SIZE));
+        double northLatitude = roundToTwoPlaces(southLatitude + OVERLAY_SIZE);
+        double eastLongitude = roundToTwoPlaces(westLongitude + OVERLAY_SIZE);
+
         LatLng sw = new LatLng(southLatitude, westLongitude);
         LatLng ne = new LatLng(northLatitude, eastLongitude);
         LatLngBounds bound = new LatLngBounds(sw, ne);
 
         return bound;
+    }
+
+    public double roundToTwoPlaces(double number) {
+        number = Math.round(number * 100);
+        return number/100;
     }
 
     public String getLatLngString(LatLng obj){
