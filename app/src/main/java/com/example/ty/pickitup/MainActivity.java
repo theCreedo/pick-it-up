@@ -186,6 +186,7 @@ public class MainActivity extends AppCompatActivity
                 marker.setTag(0);
                 // Sending an object
                 socket.emit("push_pin", mLatitude, mLongitude);
+                markedSet.add(getLatLngString(marker.getPosition()));
 
 
             }
@@ -194,6 +195,10 @@ public class MainActivity extends AppCompatActivity
         // Stub for when you pick up garbage
         stub = (ViewStub) findViewById(R.id.viewStub1);
         stub_layout = stub.inflate();
+
+        GREEN = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN);
+        YELLOW = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW);
+        RED = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED);
 
 
     }
@@ -429,8 +434,12 @@ public class MainActivity extends AppCompatActivity
                     socket.emit("poll", ack);
                     System.out.println("EMISSIONS");
                     handler.postDelayed(this, 30000);
+                    updateEverything(liveData, deadData);
                 }
             }, 10000);
+
+            OVERLAY_IMAGES[0] = GREEN; OVERLAY_IMAGES[1] = YELLOW; OVERLAY_IMAGES[2] = RED;
+
 
 
         } catch (URISyntaxException e) {
@@ -652,11 +661,11 @@ public class MainActivity extends AppCompatActivity
     private static final double OVERLAY_SIZE = .03;
 
 
-    private static final BitmapDescriptor GREEN = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN);
-    private static final BitmapDescriptor YELLOW = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW);
-    private static final BitmapDescriptor RED = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED);
+    private static BitmapDescriptor GREEN; // = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN);
+    private static BitmapDescriptor YELLOW; // = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW);
+    private static BitmapDescriptor RED; // = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED);
 
-    private static final BitmapDescriptor[] OVERLAY_IMAGES = {GREEN, YELLOW, RED};
+    private static BitmapDescriptor[] OVERLAY_IMAGES = new BitmapDescriptor[3];
 
 
 
@@ -729,6 +738,26 @@ public class MainActivity extends AppCompatActivity
         // Creates the heat map and removes dead data hiding in the markedSet
         updateMaps(deadData);
         // Place All Markers from markedSet (liveData) onto the mMap
+        mMap.clear();
+        for(String pair : markedSet) {
+            String[] arr = pair.split(" ");
+            double latitude = Double.parseDouble(arr[0]);
+            double longitude = Double.parseDouble(arr[1]);
+            MarkerOptions trashMarker = new MarkerOptions();
+            trashMarker.anchor(0.5f, 0.5f);
+            trashMarker.icon(BitmapDescriptorFactory.fromResource(R.drawable.trash));
+            trashMarker.position(new LatLng(latitude, longitude));
+            Marker markyMark = mMap.addMarker(trashMarker);
+            markyMark.setTag(0);
+        }
         // INSERT CALL HERE TO MAKE THAT HAPPEN
+
+        MarkerOptions mp = new MarkerOptions();
+        mp.position(new LatLng(mLatitude, mLongitude));
+        mp.icon(BitmapDescriptorFactory.fromResource(R.drawable.checkbox_blank_circle));
+        mp.anchor(0.5f, 0.5f);
+        mp.title("My position");
+        mMarker = mMap.addMarker(mp);
+        mMarker.setTag(-1);
     }
 }
