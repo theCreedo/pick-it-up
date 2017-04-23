@@ -36,9 +36,9 @@ public class Vision {
         mBitmap.compress(Bitmap.CompressFormat.JPEG, 100, output);
         ByteArrayInputStream inputStream = new ByteArrayInputStream(output.toByteArray());
 
-        AnalysisResult v = this.client.analyzeImage(inputStream, features, details);
+        //AnalysisResult v = this.client.analyzeImage(inputStream, features, details);
 
-        String result = gson.toJson(v);
+        //String result = gson.toJson(v);
     }
     /*
         try

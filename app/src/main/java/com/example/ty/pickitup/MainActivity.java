@@ -10,10 +10,12 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.location.Location;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.provider.MediaStore;
+import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -57,8 +59,8 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.gson.Gson;
 import com.microsoft.projectoxford.vision.VisionServiceClient;
 import com.microsoft.projectoxford.vision.VisionServiceRestClient;
+import com.microsoft.projectoxford.vision.contract.AnalysisResult;
 import com.microsoft.projectoxford.vision.rest.VisionServiceException;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -96,7 +98,9 @@ public class MainActivity extends AppCompatActivity
     private SharedPreferences preferences;
     private double mLatitude, mLongitude;
     private ViewStub stub;
+    private ViewStub stub2;
     private View stub_layout;
+    private View stub_achievement;
 
     private Marker marker;
     // The entry point to Google Play services, used by the Places API and Fused Location Provider.
@@ -285,6 +289,9 @@ public class MainActivity extends AppCompatActivity
         stub = (ViewStub) findViewById(R.id.viewStub1);
         stub_layout = stub.inflate();
 
+        stub2 = (ViewStub) findViewById(R.id.viewStub2);
+        stub_achievement = stub2.inflate();
+
         // Set fact textview
         fact = (TextView) findViewById(R.id.facts);
     }
@@ -292,15 +299,15 @@ public class MainActivity extends AppCompatActivity
 
     private String process(Bitmap bitmap) throws VisionServiceException, IOException {
         Gson gson = new Gson();
+        client = new VisionServiceRestClient("8755aa9f415c4b2cb0b5f2f3fcd53fa7");
 
-        String model = "celebrities";
 
         // Put the image into an input stream for detection.
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         bitmap.compress(Bitmap.CompressFormat.JPEG, 100, output);
         ByteArrayInputStream inputStream = new ByteArrayInputStream(output.toByteArray());
-
-        //AnalysisInDomainResult v = this.client.analyzeImageInDomain(inputStream, model);
+        System.out.println("fuck shit up");
+        AnalysisResult v = this.client.describe(inputStream, 1);
         String result = gson.toJson(v);
         Log.d("result", result);
 
@@ -345,7 +352,7 @@ public class MainActivity extends AppCompatActivity
                     try {
                         bitmap = android.provider.MediaStore.Images.Media
                                 .getBitmap(cr, selectedImage);
-                        process(bitmap);
+                        new doRequest(bitmap).execute();
                         cameraView.setImageBitmap(bitmap);
                         cameraView.setVisibility(View.VISIBLE);
                         pickupButton.setVisibility(View.VISIBLE);
@@ -548,8 +555,8 @@ public class MainActivity extends AppCompatActivity
                 @Override
                 public void run() {
                     socket.emit("poll", ack);
-                    System.out.println("EMISSIONS");
-                    handler.postDelayed(this, 5000);
+                    System.out.println("polling");
+                    handler.postDelayed(this, 30000);
                     updateEverything(liveData, deadData);
                 }
             }, 0);
@@ -566,6 +573,70 @@ public class MainActivity extends AppCompatActivity
 
 
     }
+
+    public void foundItem(boolean bottle) {
+        stub_achievement.setVisibility(View.VISIBLE);
+        ImageView image = (ImageView) stub_achievement.findViewById(R.id.achievement_icon);
+        TextView text = (TextView) stub_achievement.findViewById(R.id.text);
+        final Animation anim = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.translate_in);
+        final Animation animOut = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.alpha_out);
+
+        if(bottle) {
+            text.setText("You've found a bottle!");
+            image.setImageResource(R.mipmap.ic_bottle_blue_v2);
+            int count = preferences.getInt("bottle", 0);
+            preferences.edit().putInt("bottle", count + 1).apply();
+        } else {
+            text.setText("You've found a bag!");
+            image.setImageResource(R.mipmap.ic_bag_blue);
+            int count = preferences.getInt("bag", 0);
+            preferences.edit().putInt("bag", count + 1).apply();
+        }
+
+        final Animation.AnimationListener alphaInListener = new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {
+                stub_achievement.setVisibility(View.VISIBLE);
+            }
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                new Handler().postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        stub_achievement.startAnimation(animOut);
+
+                    }
+                }, 3000);
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {
+
+            }
+        };
+
+        final Animation.AnimationListener peaceOut = new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {
+
+            }
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                stub_achievement.setVisibility(View.INVISIBLE);
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {
+
+            }
+        };
+        anim.setAnimationListener(alphaInListener);
+        animOut.setAnimationListener(peaceOut);
+        image.startAnimation(anim);
+    }
+
 
     /**
      * Gets the current location of the device, and positions the map's camera.
@@ -734,8 +805,6 @@ public class MainActivity extends AppCompatActivity
                             @Override
                             public void onAnimationEnd(Animation animation) {
                                 stub_layout.setVisibility(View.INVISIBLE);
-                                int count = preferences.getInt("litter", 0);
-                                preferences.edit().putInt("litter", count + 1).apply();
 
                                 // Tell server that garbage has been picked up
                                 socket.emit("pull_pin", markerLoc.latitude, markerLoc.longitude);
@@ -891,4 +960,46 @@ public class MainActivity extends AppCompatActivity
         jesus.setTag(-1);
         markers.add(jesus);
     }
+
+    private class doRequest extends AsyncTask<String, String, String> {
+        // Store error message
+        private Exception e = null;
+        private final Bitmap b;
+        public doRequest(Bitmap b) {
+            this.b = b;
+        }
+
+        @Override
+        protected String doInBackground(String... args) {
+            try {
+                System.out.println("in doInbackground");
+
+                return process(b);
+            } catch (Exception e) {
+                this.e = e;    // Store error
+            }
+
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(String data) {
+            super.onPostExecute(data);
+            // Display based on error existence
+            System.out.println("data: " + data);
+            Gson gson = new Gson();
+            AnalysisResult result = gson.fromJson(data, AnalysisResult.class);
+            for (String tag: result.description.tags) {
+                if(tag.equals("bottle")) {
+                    foundItem(true);
+
+                    break;
+                } else if(tag.equals("bag")) {
+                    foundItem(false); // yea yea yea, i'd use an enum if i was trying
+                    break;
+                }
+            }
+        }
+    }
+
 }

@@ -77,7 +77,7 @@ public class AchievementAdapter extends ArrayAdapter<Achievement> {
             case 6:
             case 7:
             case 8:
-                cnt = preferences.getInt("plastic", 0);
+                cnt = preferences.getInt("bag", 0);
                 break;
 
         }

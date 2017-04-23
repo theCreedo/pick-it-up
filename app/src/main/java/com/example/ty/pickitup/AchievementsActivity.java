@@ -15,7 +15,7 @@ import java.util.ArrayList;
 public class AchievementsActivity extends AppCompatActivity {
 
     private static final String[] CATEGORIES =
-                                {"litter", "water bottles", "plastic bags"};
+                                {"litter", "water_bottles", "plastic_bags"};
 
     private static final int[] LEVELS = {1, 10, 50};
 
