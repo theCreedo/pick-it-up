@@ -43,9 +43,13 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
+import com.google.android.gms.maps.model.GroundOverlay;
+import com.google.android.gms.maps.model.GroundOverlayOptions;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
@@ -57,13 +61,14 @@ import org.json.JSONObject;
 
 import java.io.File;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 
 import io.socket.client.Ack;
 import io.socket.client.IO;
 import io.socket.client.Socket;
 import io.socket.emitter.Emitter;
-
-import static java.security.AccessController.getContext;
 
 /**
  * An activity that displays a map showing the place at the device's current location.
@@ -83,6 +88,7 @@ public class MainActivity extends AppCompatActivity
     private ViewStub stub;
     private View stub_layout;
 
+    private Marker marker;
     // The entry point to Google Play services, used by the Places API and Fused Location Provider.
     private GoogleApiClient mGoogleApiClient;
     private LocationRequest mLocationRequest;
@@ -90,7 +96,7 @@ public class MainActivity extends AppCompatActivity
 
     // A default location (Sydney, Australia) and default zoom to use when location permission is
     // not granted.
-    private final LatLng mDefaultLocation = new LatLng(-33.8523341, 151.2106085);
+    private final LatLng mDefaultLocation = new LatLng(32.8523341, -96.2106085);
     private static final int DEFAULT_ZOOM = 15;
     private static final int PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 1;
     private boolean mLocationPermissionGranted;
@@ -165,7 +171,6 @@ public class MainActivity extends AppCompatActivity
 
             }
         });
-
         leaveButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -176,21 +181,10 @@ public class MainActivity extends AppCompatActivity
                 trashMarker.icon(BitmapDescriptorFactory.fromResource(R.drawable.trash));
                 trashMarker.position(new LatLng(mLatitude, mLongitude));
                 findViewById(R.id.camera_container).setVisibility(View.GONE);
-                final Marker marker = mMap.addMarker(trashMarker);
-
+                marker = mMap.addMarker(trashMarker);
+                marker.setTag(0);
                 // Sending an object
-                socket.emit("push_pin", mLatitude, mLongitude, new Ack() {
-                    @Override
-                    public void call(Object... args) {
-                        JSONObject obj = (JSONObject) args[0];
-                        try {
-                            int id = obj.getInt("id");
-                            marker.setTag(id);
-                        } catch (JSONException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                });
+                socket.emit("push_pin", mLatitude, mLongitude);
 
 
             }
@@ -391,15 +385,15 @@ public class MainActivity extends AppCompatActivity
             final Ack ack = new Ack() {
                 @Override
                 public void call(Object... args) {
+                    JSONArray arr = (JSONArray) args[0];
+                    System.out.println("In call: arr length " + arr.length());
 
-                        JSONArray arr = (JSONArray) args[0];
-                        for (int i = 0; i < arr.length(); ++i) {
+                    for (int i = 0; i < arr.length(); ++i) {
                             try {
                                 JSONObject obj = arr.getJSONObject(i);
-                                int id = obj.getInt("ID");
-                                String latitude = obj.getString("LATITUDE");
-                                String longitude = obj.getString("LONGITUDE");
-
+                                String latitude = obj.getString("latitude");
+                                String longitude = obj.getString("longitude");
+                                System.out.println(latitude + ", " + longitude);
 
                             } catch (JSONException e) {
                                 e.printStackTrace();
@@ -413,10 +407,10 @@ public class MainActivity extends AppCompatActivity
                 @Override
                 public void run() {
                     socket.emit("poll", ack);
-                    //System.out.println("EMISSIONS");
-                    handler.postDelayed(this, 10000);
+                    System.out.println("EMISSIONS");
+                    handler.postDelayed(this, 30000);
                 }
-            }, 10000);
+            }, 30000);
 
 
         } catch (URISyntaxException e) {
@@ -454,8 +448,10 @@ public class MainActivity extends AppCompatActivity
                     .getLastLocation(mGoogleApiClient);
         }
 
-        mLatitude = mLastKnownLocation.getLatitude();
-        mLongitude = mLastKnownLocation.getLongitude();
+        if(mLastKnownLocation != null) {
+            mLatitude = mLastKnownLocation.getLatitude();
+            mLongitude = mLastKnownLocation.getLongitude();
+        }
 
         // Set the map's camera position to the current location of the device.
         if (mCameraPosition != null) {
@@ -557,7 +553,7 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public boolean onMarkerClick(Marker marker) {
-        if ((Integer) marker.getTag() >= 0) {
+        if (!marker.getTag().equals(-1)){
             LatLng markerLoc = marker.getPosition();
             Location locMarker = new Location("");
             locMarker.setLatitude(markerLoc.latitude);
@@ -573,12 +569,38 @@ public class MainActivity extends AppCompatActivity
                 stub_layout.setVisibility(View.VISIBLE);
                 ImageView image = (ImageView) stub_layout.findViewById(R.id.achievement_icon);
                 final Animation anim = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.translate_in);
+                final Animation animOut = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.alpha_out);
+
+                anim.setAnimationListener(new Animation.AnimationListener() {
+                    @Override
+                    public void onAnimationStart(Animation animation) {
+
+                    }
+
+                    @Override
+                    public void onAnimationEnd(Animation animation) {
+                        final Handler handler = new Handler();
+                        handler.postDelayed(new Runnable() {
+                            @Override
+                            public void run() {
+                                stub_layout.startAnimation(animOut);
+                                System.out.println("fuk u hombre");
+
+                            }
+                        }, 5000);
+                    }
+
+                    @Override
+                    public void onAnimationRepeat(Animation animation) {
+
+                    }
+                });
+
                 image.startAnimation(anim);
 
                 image.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        Animation animOut = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.alpha_out);
                         stub_layout.startAnimation(animOut);
                         animOut.setAnimationListener(new Animation.AnimationListener() {
                             @Override
@@ -608,6 +630,102 @@ public class MainActivity extends AppCompatActivity
             }
         }
         return true;
+    }
+
+    /**
+     * Kishan variables
+     */
+
+
+    /////// HashMap<Integer, ....>
+            // When we place marker : send to alive list
+            // WHen we throw away litter, send to dead data list
+            // When we remove marker : <now for overlay> <server identifies it as dead data>
+            // SERVER adds to list of dead data and removes from alive data
+            // On poll : sever sends the dead + alive with JSON identifier
+            // Iterate through list check with dead data hashmap
+            // If dead and not in map --> update ground overlay with all fresh dead data
+
+
+    private HashMap<String, GroundOverlay> overlayMap = new HashMap<>();
+    private HashMap<String, Integer> litterMap = new HashMap<>();
+    private HashSet<String> markedSet = new HashSet<>();
+
+    private static final int[] LEVELS = {1, 25, 50};
+    private static final double OVERLAY_SIZE = .03;
+
+    // 3 levels, green, yellow, red for the color of the overlay
+    
+    private static final BitmapDescriptor[] OVERLAY_IMAGES = new BitmapDescriptor[10000];/* = {
+            BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN),
+            BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW),
+            BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)};
+    */
+
+
+    public void updateMaps(ArrayList<LatLng> data) {
+        for (int i = 0; i < data.size(); i++) {
+            // Represents a quadrant that could be covered by a ground overlay
+            LatLngBounds bound = getStringToHash(data.get(i));
+            String hashBound = getLatLngString(bound.southwest) +
+                             getLatLngString(bound.northeast);
+            // Represents the exact coordinate of marked trash
+            String hashMark = getLatLngString(data.get(i));
+            // We picked up litter at the same location as marked, so remove
+            if (markedSet.contains(hashMark)) {
+                markedSet.remove(hashMark);
+            }
+            // If we have already picked up litter in this quadrant, update
+            // overlay heatmap and the litter count for this quadrant
+            if (litterMap.containsKey(hashBound)) {
+                int newLitterCount = litterMap.get(hashBound) + 1;
+                litterMap.put(hashBound, newLitterCount);
+                for (int j = 0; j < LEVELS.length; j++) {
+                    if (newLitterCount == LEVELS[j]) {
+                        GroundOverlay g = overlayMap.get(hashBound);
+                        g.setImage(OVERLAY_IMAGES[j]);
+                    }
+                }
+            }
+            // We have not picked up trash in this quadrant before, so create
+            // an overlay for it and add the quadrant to the litterMap and
+            // to the overlayMap
+            else {
+                litterMap.put(hashBound, 1);
+                GroundOverlayOptions g = new GroundOverlayOptions()
+                        .positionFromBounds(bound)
+                        .image(OVERLAY_IMAGES[0])
+                        .transparency(.5f);
+                overlayMap.put(hashBound, mMap.addGroundOverlay(g));
+            }
+        }
+    }
+
+    public LatLngBounds getStringToHash(LatLng current) {
+        // Calculate LatLng Bound
+        // Please check my logic/math
+        // I def did not handle longitude/latitude overflow/underflow
+        double latitude = current.latitude;
+        double longitude = current.longitude;
+        double lowerLatitude = latitude - (latitude % OVERLAY_SIZE);
+        double lowerLongitude = longitude - (longitude % OVERLAY_SIZE);
+        double upperLatitude = lowerLatitude + OVERLAY_SIZE;
+        double upperLongitude = lowerLongitude + OVERLAY_SIZE;
+        LatLng sw = new LatLng(lowerLatitude, lowerLongitude);
+        LatLng ne = new LatLng(upperLatitude, upperLongitude);
+        LatLngBounds bound = new LatLngBounds(sw, ne);
+
+        return bound;
+    }
+
+    public String getLatLngString(LatLng obj){
+        return obj.latitude + " " + obj.longitude;
+    }
+
+
+    public void updateMarkedTrash(ArrayList<LatLng> markedData) {
+        for (int i = 0; i < markedData.size(); i++)
+            markedSet.add(getLatLngString(markedData.get(i)));
     }
 
 
