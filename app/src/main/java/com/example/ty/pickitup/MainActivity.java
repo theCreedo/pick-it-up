@@ -54,12 +54,19 @@ import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.gson.Gson;
+import com.microsoft.projectoxford.vision.VisionServiceClient;
+import com.microsoft.projectoxford.vision.VisionServiceRestClient;
+import com.microsoft.projectoxford.vision.rest.VisionServiceException;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -131,9 +138,16 @@ public class MainActivity extends AppCompatActivity
             "Glass can take over a million years to degrade"};
     TextView fact;
 
+    //// Vision
+    private Uri mImageUri;
+    private Bitmap mBitmap;
+    private VisionServiceClient client;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        client = new VisionServiceRestClient("8755aa9f415c4b2cb0b5f2f3fcd53fa7");
 
         final Animation alphaIn = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.alpha_in);
         alphaIn.setDuration(1200);
@@ -276,6 +290,23 @@ public class MainActivity extends AppCompatActivity
     }
 
 
+    private String process(Bitmap bitmap) throws VisionServiceException, IOException {
+        Gson gson = new Gson();
+
+        String model = "celebrities";
+
+        // Put the image into an input stream for detection.
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, output);
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(output.toByteArray());
+
+        //AnalysisInDomainResult v = this.client.analyzeImageInDomain(inputStream, model);
+        String result = gson.toJson(v);
+        Log.d("result", result);
+
+        return result;
+    }
+
     public void takePhoto(View view) {
         Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         File photo = new File(Environment.getExternalStorageDirectory(), "Pic.jpg");
@@ -314,7 +345,7 @@ public class MainActivity extends AppCompatActivity
                     try {
                         bitmap = android.provider.MediaStore.Images.Media
                                 .getBitmap(cr, selectedImage);
-
+                        process(bitmap);
                         cameraView.setImageBitmap(bitmap);
                         cameraView.setVisibility(View.VISIBLE);
                         pickupButton.setVisibility(View.VISIBLE);

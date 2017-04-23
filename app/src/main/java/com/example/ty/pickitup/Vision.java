@@ -3,9 +3,12 @@ package com.example.ty.pickitup;
 import android.graphics.Bitmap;
 import android.net.Uri;
 
+import com.google.gson.Gson;
 import com.microsoft.projectoxford.vision.VisionServiceClient;
 import com.microsoft.projectoxford.vision.VisionServiceRestClient;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
@@ -17,8 +20,27 @@ import java.net.URL;
 
 public class Vision {
 
+    private Uri mImageUri;
+    private Bitmap mBitmap;
+    private VisionServiceClient client;
+    public void request_vision() {
+        client = new VisionServiceRestClient("8755aa9f415c4b2cb0b5f2f3fcd53fa7");
+    }
 
     public static void getLabels(Bitmap mBitmap) {
+        Gson gson = new Gson();
+        String[] features = {"ImageType", "Categories", "Faces"};
+        String[] details = {};
+        // Put the image into an input stream for detection.
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        mBitmap.compress(Bitmap.CompressFormat.JPEG, 100, output);
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(output.toByteArray());
+
+        AnalysisResult v = this.client.analyzeImage(inputStream, features, details);
+
+        String result = gson.toJson(v);
+    }
+    /*
         try
         {
             Uri.Builder b = Uri.parse("https://westus.api.cognitive.microsoft.com/vision/v1.0/analyze").buildUpon();
@@ -45,11 +67,11 @@ public class Vision {
             if (entity != null)
             {
                 System.out.println(EntityUtils.toString(entity));
-            }*/
+            }
         }
         catch (Exception e)
         {
             System.out.println(e.getMessage());
-        }
-    }
+        }*/
+
 }
