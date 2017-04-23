@@ -1,4 +1,4 @@
-# Pick It Up: Earthack
+# Earthack: Pick It Up
 
 ## Inspiration
 Walking around the local neighborhood or downtown city, pieces of trash can be found lying on the ground or in city gutters due to notorious litterbugs. Many of these litterbugs are children under the age of 19 who ignorantly throw away empty water bottles or plastic bags without considering the inherent effect their actions will bring upon the environment, city, and the community they reside in. Fortunately, it's not too late to educate them. We decided to create an app by making community service both a fun and educational task through a simple, well-intentioned game, Pick It Up. 
