@@ -42,11 +42,6 @@
             android:gravity="top"
             tools:text="1" />
 
-        <ProgressBar
-            android:layout_width="match_parent"
-            android:layout_height="8dp"
-            />
-
     </LinearLayout>
 
 </LinearLayout>

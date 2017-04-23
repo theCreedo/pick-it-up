@@ -628,6 +628,7 @@ public class MainActivity extends AppCompatActivity
         return true;
     }
 
+
     /**
      * Kishan variables
      */
@@ -643,30 +644,32 @@ public class MainActivity extends AppCompatActivity
     // If dead and not in map --> update ground overlay with all fresh dead data
 
 
-    private HashMap<String, GroundOverlay> overlayMap = new HashMap<>();
-    private HashMap<String, Integer> litterMap = new HashMap<>();
-    private HashSet<String> markedSet = new HashSet<>();
+    private HashMap<String, GroundOverlay> overlayMap;
+    private HashMap<String, Integer> litterMap;
+    private HashSet<String> markedSet;
 
     private static final int[] LEVELS = {1, 25, 50};
     private static final double OVERLAY_SIZE = .03;
 
-    // 3 levels, green, yellow, red for the color of the overlay
 
-    private static final BitmapDescriptor[] OVERLAY_IMAGES = new BitmapDescriptor[10000];/* = {
-            BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN),
-            BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW),
-            BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)};
-    */
+    private static final BitmapDescriptor GREEN = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN);
+    private static final BitmapDescriptor YELLOW = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW);
+    private static final BitmapDescriptor RED = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED);
+
+    private static final BitmapDescriptor[] OVERLAY_IMAGES = {GREEN, YELLOW, RED};
 
 
-    public void updateMaps(ArrayList<LatLng> data) {
-        for (int i = 0; i < data.size(); i++) {
+
+    public void updateMaps(ArrayList<LatLng> deadData) {
+        overlayMap = new HashMap<>();
+        litterMap = new HashMap<>();
+        for (int i = 0; i < deadData.size(); i++) {
             // Represents a quadrant that could be covered by a ground overlay
-            LatLngBounds bound = getStringToHash(data.get(i));
+            LatLngBounds bound = getStringToHash(deadData.get(i));
             String hashBound = getLatLngString(bound.southwest) +
                     getLatLngString(bound.northeast);
             // Represents the exact coordinate of marked trash
-            String hashMark = getLatLngString(data.get(i));
+            String hashMark = getLatLngString(deadData.get(i));
             // We picked up litter at the same location as marked, so remove
             if (markedSet.contains(hashMark)) {
                 markedSet.remove(hashMark);
@@ -714,13 +717,18 @@ public class MainActivity extends AppCompatActivity
         return bound;
     }
 
-    public String getLatLngString(LatLng obj) {
+    public String getLatLngString(LatLng obj){
         return obj.latitude + " " + obj.longitude;
     }
 
 
-    public void updateMarkedTrash(ArrayList<LatLng> markedData) {
-        for (int i = 0; i < markedData.size(); i++)
-            markedSet.add(getLatLngString(markedData.get(i)));
+    public void updateEverything(ArrayList<LatLng> liveData, ArrayList<LatLng> deadData) {
+        markedSet = new HashSet<>();
+        for (int i = 0; i < liveData.size(); i++)
+            markedSet.add(getLatLngString(liveData.get(i)));
+        // Creates the heat map and removes dead data hiding in the markedSet
+        updateMaps(deadData);
+        // Place All Markers from markedSet (liveData) onto the mMap
+        // INSERT CALL HERE TO MAKE THAT HAPPEN
     }
 }
