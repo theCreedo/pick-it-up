@@ -11,11 +11,11 @@ import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
 import android.provider.MediaStore;
+import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -49,8 +49,19 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.nearby.messages.internal.HandleClientLifecycleEventRequest;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.File;
+import java.net.URISyntaxException;
+
+import io.socket.client.Ack;
+import io.socket.client.IO;
+import io.socket.client.Socket;
+import io.socket.emitter.Emitter;
 
 import static java.security.AccessController.getContext;
 
@@ -97,7 +108,8 @@ public class MainActivity extends AppCompatActivity
     private static final int TAKE_PICTURE = 1;
     private Uri imageUri;
 
-
+    // Shocket
+    Socket socket;
 
 
     @Override
@@ -150,6 +162,7 @@ public class MainActivity extends AppCompatActivity
                 int count = preferences.getInt("litter_count", 0);
                 preferences.edit().putInt("litter_count", ++count);
                 findViewById(R.id.camera_container).setVisibility(View.GONE);
+
             }
         });
 
@@ -158,13 +171,28 @@ public class MainActivity extends AppCompatActivity
             public void onClick(View v) {
                 // Put a marker
                 MarkerOptions trashMarker = new MarkerOptions();
-                trashMarker.anchor(0.5f,0.5f);
+                trashMarker.anchor(0.5f, 0.5f);
 
                 trashMarker.icon(BitmapDescriptorFactory.fromResource(R.drawable.trash));
                 trashMarker.position(new LatLng(mLatitude, mLongitude));
                 findViewById(R.id.camera_container).setVisibility(View.GONE);
-                Marker marker =mMap.addMarker(trashMarker);
-                marker.setTag("trash");
+                final Marker marker = mMap.addMarker(trashMarker);
+
+                // Sending an object
+                socket.emit("push_pin", mLatitude, mLongitude, new Ack() {
+                    @Override
+                    public void call(Object... args) {
+                        JSONObject obj = (JSONObject) args[0];
+                        try {
+                            int id = obj.getInt("id");
+                            marker.setTag(id);
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                });
+
+
             }
         });
 
@@ -208,8 +236,7 @@ public class MainActivity extends AppCompatActivity
                         cameraView.setVisibility(View.VISIBLE);
                         pickupButton.setVisibility(View.VISIBLE);
                         leaveButton.setVisibility(View.VISIBLE);
-                        Toast.makeText(this, selectedImage.toString(),
-                                Toast.LENGTH_LONG).show();
+
                     } catch (Exception e) {
                         Toast.makeText(this, "Failed to load", Toast.LENGTH_SHORT)
                                 .show();
@@ -264,7 +291,6 @@ public class MainActivity extends AppCompatActivity
     }
 
 
-
     /**
      * Handles failure to connect to the Google Play services client.
      */
@@ -286,6 +312,7 @@ public class MainActivity extends AppCompatActivity
 
     /**
      * Sets up the options menu.
+     *
      * @param menu The options menu.
      * @return Boolean.
      */
@@ -297,6 +324,7 @@ public class MainActivity extends AppCompatActivity
 
     /**
      * Handles a click on the menu option to get a place.
+     *
      * @param item The menu item to handle.
      * @return Boolean.
      */
@@ -346,6 +374,57 @@ public class MainActivity extends AppCompatActivity
 
         // Get the current location of the device and set the position of the map.
         getDeviceLocation();
+
+        // Establish connection with server ...
+        // Done on map ready because communication depends on map interaction
+        try {
+            socket = IO.socket("http://52.43.59.155:3000/");
+            socket.on(Socket.EVENT_CONNECT, new Emitter.Listener() {
+                @Override
+                public void call(Object... args) {
+                    // On connection
+                    System.out.println("lllll");
+                }
+            });
+            socket.connect();
+
+            final Ack ack = new Ack() {
+                @Override
+                public void call(Object... args) {
+
+                        JSONArray arr = (JSONArray) args[0];
+                        for (int i = 0; i < arr.length(); ++i) {
+                            try {
+                                JSONObject obj = arr.getJSONObject(i);
+                                int id = obj.getInt("ID");
+                                String latitude = obj.getString("LATITUDE");
+                                String longitude = obj.getString("LONGITUDE");
+
+
+                            } catch (JSONException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+
+            };
+            final Handler handler = new Handler();
+            handler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    socket.emit("poll", ack);
+                    //System.out.println("EMISSIONS");
+                    handler.postDelayed(this, 10000);
+                }
+            }, 10000);
+
+
+        } catch (URISyntaxException e) {
+
+            e.printStackTrace();
+        }
+
+
     }
 
     /**
@@ -455,18 +534,19 @@ public class MainActivity extends AppCompatActivity
         mLatitude = location.getLatitude();
         mLongitude = location.getLongitude();
 
-        if(mMarker == null) {
+        if (mMarker == null) {
             MarkerOptions mp = new MarkerOptions();
             mp.position(new LatLng(location.getLatitude(), location.getLongitude()));
             mp.icon(BitmapDescriptorFactory.fromResource(R.drawable.checkbox_blank_circle));
-            mp.anchor(0.5f,0.5f);
-            mp.title("my position");
+            mp.anchor(0.5f, 0.5f);
+            mp.title("My position");
+
 
             mMarker = mMap.addMarker(mp);
-
+            mMarker.setTag(-1);
         } else {
 
-            MarkerAnimate.animateMarkerToGB(mMarker, new LatLng(location.getLatitude(), location.getLongitude()), linear,  DURATION);
+            MarkerAnimate.animateMarkerToGB(mMarker, new LatLng(location.getLatitude(), location.getLongitude()), linear, DURATION);
         }
 
         mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(
@@ -475,10 +555,9 @@ public class MainActivity extends AppCompatActivity
     }
 
 
-
     @Override
     public boolean onMarkerClick(Marker marker) {
-        if(marker.getTag() == "trash") {
+        if ((Integer) marker.getTag() >= 0) {
             LatLng markerLoc = marker.getPosition();
             Location locMarker = new Location("");
             locMarker.setLatitude(markerLoc.latitude);
@@ -519,6 +598,11 @@ public class MainActivity extends AppCompatActivity
                         });
                     }
                 });
+
+
+                // Tell server that garbage has been picked up
+                socket.emit("pull_pin", marker.getTag(), mLatitude, mLongitude);
+
             } else {
                 Toast.makeText(getApplicationContext(), "You're too far away from this litter", Toast.LENGTH_SHORT).show();
             }

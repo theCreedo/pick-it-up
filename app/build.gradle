@@ -30,4 +30,8 @@ dependencies {
     compile 'com.google.android.gms:play-services:9.6.1'
     compile 'com.microsoft.projectoxford:vision:0.5.0'
     compile 'com.android.support:support-v4:23.4.0'
+
+    compile ('io.socket:socket.io-client:0.8.3') {
+        exclude group: 'org.json', module:''
+    }
 }
