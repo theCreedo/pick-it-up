@@ -184,6 +184,7 @@ public class MainActivity extends AppCompatActivity
                 findViewById(R.id.camera_container).setVisibility(View.GONE);
                 marker = mMap.addMarker(trashMarker);
                 marker.setTag(0);
+                markers.add(marker);
                 // Sending an object
                 socket.emit("push_pin", mLatitude, mLongitude);
                 markedSet.add(getLatLngString(marker.getPosition()));
@@ -191,18 +192,28 @@ public class MainActivity extends AppCompatActivity
 
             }
         });
-
+        //test(mDefaultLocation);
         // Stub for when you pick up garbage
         stub = (ViewStub) findViewById(R.id.viewStub1);
         stub_layout = stub.inflate();
 
-        GREEN = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN);
-        YELLOW = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW);
-        RED = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED);
-
 
     }
 
+    public void test(LatLng current) {
+        double latitude = current.latitude;
+        double longitude = current.longitude;
+        double southLatitude = latitude - (latitude % OVERLAY_SIZE);
+        double westLongitude = longitude - (longitude % OVERLAY_SIZE);
+        double northLatitude = southLatitude + OVERLAY_SIZE;
+        double eastLongitude = westLongitude + OVERLAY_SIZE;
+        LatLng sw = new LatLng(southLatitude, westLongitude);
+        LatLng ne = new LatLng(northLatitude, eastLongitude);
+        LatLngBounds bound = new LatLngBounds(sw, ne);
+        System.out.println("SW " + southLatitude + " " + westLongitude + " NE " + northLatitude + " " + eastLongitude);
+        GroundOverlayOptions g = new GroundOverlayOptions().positionFromBounds(bound).image(OVERLAY_IMAGES[0]);
+        mMap.addGroundOverlay(g);
+    }
 
     public void takePhoto(View view) {
         Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
@@ -438,7 +449,9 @@ public class MainActivity extends AppCompatActivity
                 }
             }, 0);
 
-            OVERLAY_IMAGES[0] = GREEN; OVERLAY_IMAGES[1] = YELLOW; OVERLAY_IMAGES[2] = RED;
+            OVERLAY_IMAGES[0] = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN);
+            OVERLAY_IMAGES[1] = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW);
+            OVERLAY_IMAGES[2] = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED);
 
 
 
@@ -569,6 +582,7 @@ public class MainActivity extends AppCompatActivity
 
             mMarker = mMap.addMarker(mp);
             mMarker.setTag(-1);
+            markers.add(mMarker);
         } else {
 
             MarkerAnimate.animateMarkerToGB(mMarker, new LatLng(location.getLatitude(), location.getLongitude()), linear, DURATION);
@@ -661,10 +675,6 @@ public class MainActivity extends AppCompatActivity
     private static final double OVERLAY_SIZE = .03;
 
 
-    private static BitmapDescriptor GREEN; // = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN);
-    private static BitmapDescriptor YELLOW; // = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW);
-    private static BitmapDescriptor RED; // = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED);
-
     private static BitmapDescriptor[] OVERLAY_IMAGES = new BitmapDescriptor[3];
 
 
@@ -700,11 +710,15 @@ public class MainActivity extends AppCompatActivity
             // to the overlayMap
             else {
                 litterMap.put(hashBound, 1);
+                System.out.println("\n\nCreating new overlay!!!!!\n\n");
+                System.out.println("\n\nBound = " + getLatLngString(bound.southwest) + " " + getLatLngString(bound.northeast));
                 GroundOverlayOptions g = new GroundOverlayOptions()
                         .positionFromBounds(bound)
+                        .visible(true)
                         .image(OVERLAY_IMAGES[0])
                         .transparency(.5f);
                 overlayMap.put(hashBound, mMap.addGroundOverlay(g));
+
             }
         }
     }
@@ -715,12 +729,12 @@ public class MainActivity extends AppCompatActivity
         // I def did not handle longitude/latitude overflow/underflow
         double latitude = current.latitude;
         double longitude = current.longitude;
-        double lowerLatitude = latitude - (latitude % OVERLAY_SIZE);
-        double lowerLongitude = longitude - (longitude % OVERLAY_SIZE);
-        double upperLatitude = lowerLatitude + OVERLAY_SIZE;
-        double upperLongitude = lowerLongitude + OVERLAY_SIZE;
-        LatLng sw = new LatLng(lowerLatitude, lowerLongitude);
-        LatLng ne = new LatLng(upperLatitude, upperLongitude);
+        double southLatitude = latitude - (latitude % OVERLAY_SIZE);
+        double westLongitude = longitude - (longitude % OVERLAY_SIZE);
+        double northLatitude = southLatitude + OVERLAY_SIZE;
+        double eastLongitude = westLongitude + OVERLAY_SIZE;
+        LatLng sw = new LatLng(southLatitude, westLongitude);
+        LatLng ne = new LatLng(northLatitude, eastLongitude);
         LatLngBounds bound = new LatLngBounds(sw, ne);
 
         return bound;
@@ -730,7 +744,7 @@ public class MainActivity extends AppCompatActivity
         return obj.latitude + " " + obj.longitude;
     }
 
-
+    ArrayList<Marker> markers = new ArrayList<>();
     public void updateEverything(ArrayList<LatLng> liveData, ArrayList<LatLng> deadData) {
         markedSet = new HashSet<>();
         for (int i = 0; i < liveData.size(); i++)
@@ -738,7 +752,10 @@ public class MainActivity extends AppCompatActivity
         // Creates the heat map and removes dead data hiding in the markedSet
         updateMaps(deadData);
         // Place All Markers from markedSet (liveData) onto the mMap
-        mMap.clear();
+        for (Marker mike_ermantrout : markers) {
+            mike_ermantrout.remove();
+        }
+
         for(String pair : markedSet) {
             String[] arr = pair.split(" ");
             double latitude = Double.parseDouble(arr[0]);
@@ -749,6 +766,7 @@ public class MainActivity extends AppCompatActivity
             trashMarker.position(new LatLng(latitude, longitude));
             Marker markyMark = mMap.addMarker(trashMarker);
             markyMark.setTag(0);
+            markers.add(markyMark);
         }
         // INSERT CALL HERE TO MAKE THAT HAPPEN
 
@@ -757,7 +775,8 @@ public class MainActivity extends AppCompatActivity
         mp.icon(BitmapDescriptorFactory.fromResource(R.drawable.checkbox_blank_circle));
         mp.anchor(0.5f, 0.5f);
         mp.title("My position");
-        mMarker = mMap.addMarker(mp);
-        mMarker.setTag(-1);
+        Marker jesus = mMap.addMarker(mp);
+        jesus.setTag(-1);
+        markers.add(jesus);
     }
 }
