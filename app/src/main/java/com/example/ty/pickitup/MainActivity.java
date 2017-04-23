@@ -642,7 +642,7 @@ public class MainActivity extends AppCompatActivity
         if (mMarker == null) {
             MarkerOptions mp = new MarkerOptions();
             mp.position(new LatLng(location.getLatitude(), location.getLongitude()));
-            mp.icon(BitmapDescriptorFactory.fromResource(R.drawable.checkbox_blank_circle));
+            mp.icon(BitmapDescriptorFactory.fromResource(R.drawable.green_character));
             mp.anchor(0.5f, 0.5f);
             mp.title("My position");
 
@@ -847,7 +847,7 @@ public class MainActivity extends AppCompatActivity
 
         MarkerOptions mp = new MarkerOptions();
         mp.position(new LatLng(mLatitude, mLongitude));
-        mp.icon(BitmapDescriptorFactory.fromResource(R.drawable.checkbox_blank_circle));
+        mp.icon(BitmapDescriptorFactory.fromResource(R.drawable.green_character));
         mp.anchor(0.5f, 0.5f);
         mp.title("My position");
         Marker jesus = mMap.addMarker(mp);
