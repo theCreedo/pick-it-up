@@ -31,6 +31,7 @@ import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -102,6 +103,8 @@ public class MainActivity extends AppCompatActivity
     private View stub_layout;
     private View stub_achievement;
 
+    RelativeLayout progressLayout;
+
     private Marker marker;
     // The entry point to Google Play services, used by the Places API and Fused Location Provider.
     private GoogleApiClient mGoogleApiClient;
@@ -153,6 +156,7 @@ public class MainActivity extends AppCompatActivity
 
         client = new VisionServiceRestClient("8755aa9f415c4b2cb0b5f2f3fcd53fa7");
 
+
         final Animation alphaIn = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.alpha_in);
         alphaIn.setDuration(1200);
         final Animation alphaOut = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.alpha_out);
@@ -174,6 +178,7 @@ public class MainActivity extends AppCompatActivity
 
         // Retrieve the content view that renders the map.
         setContentView(R.layout.activity_main);
+        progressLayout = (RelativeLayout) findViewById(R.id.progress_layout);
 
         // Build the Play services client for use by the Fused Location Provider and the Places API.
         // Use the addApi() method to request the Google Places API and the Fused Location Provider.
@@ -350,6 +355,7 @@ public class MainActivity extends AppCompatActivity
                     ContentResolver cr = getContentResolver();
                     Bitmap bitmap;
                     try {
+                        progressLayout.setVisibility(View.VISIBLE);
                         bitmap = android.provider.MediaStore.Images.Media
                                 .getBitmap(cr, selectedImage);
                         new doRequest(bitmap).execute();
@@ -985,6 +991,7 @@ public class MainActivity extends AppCompatActivity
         @Override
         protected void onPostExecute(String data) {
             super.onPostExecute(data);
+            progressLayout.setVisibility(View.INVISIBLE);
             // Display based on error existence
             System.out.println("data: " + data);
             Gson gson = new Gson();

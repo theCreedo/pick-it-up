@@ -118,7 +118,29 @@
         android:layout_centerHorizontal="true"
         android:layout_alignParentTop="true" />
 
+    <RelativeLayout
+        android:id="@+id/progress_layout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="invisible"
+        android:layout_centerHorizontal="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="5dp">
 
+        <ProgressBar
+            android:id="@+id/processing"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_centerHorizontal="true"/>
+        <TextView
+            android:text="Analyzing Image"
+            android:textSize="16sp"
+            android:layout_below="@id/processing"
+            android:layout_width="wrap_content"
+            android:gravity="center"
+            android:textColor="@android:color/black"
+            android:layout_height="wrap_content" />
+    </RelativeLayout>
 </RelativeLayout>
 
 
