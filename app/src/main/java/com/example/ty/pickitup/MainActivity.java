@@ -13,7 +13,6 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.provider.MediaStore;
-import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -53,7 +52,6 @@ import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
-import com.google.android.gms.nearby.messages.internal.HandleClientLifecycleEventRequest;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -78,6 +76,9 @@ public class MainActivity extends AppCompatActivity
         GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener,
         GoogleMap.OnMarkerClickListener {
+
+    ArrayList<LatLng> liveData = new ArrayList<>();
+    ArrayList<LatLng> deadData = new ArrayList<>();
 
     private final int DURATION = 2000;
     private static final String TAG = MainActivity.class.getSimpleName();
@@ -385,21 +386,40 @@ public class MainActivity extends AppCompatActivity
             final Ack ack = new Ack() {
                 @Override
                 public void call(Object... args) {
-                    JSONArray arr = (JSONArray) args[0];
-                    System.out.println("In call: arr length " + arr.length());
+                    JSONArray arr_live = (JSONArray) args[0];
+                    JSONArray arr_dead = (JSONArray) args[1];
+                    System.out.println("In call: arr_live length " + arr_live.length());
+                    System.out.println("In call: arr_Dead length " + arr_dead.length());
 
-                    for (int i = 0; i < arr.length(); ++i) {
-                            try {
-                                JSONObject obj = arr.getJSONObject(i);
-                                String latitude = obj.getString("latitude");
-                                String longitude = obj.getString("longitude");
-                                System.out.println(latitude + ", " + longitude);
+                    for (int i = 0; i < arr_live.length(); ++i) {
+                        try {
+                            JSONObject obj = arr_live.getJSONObject(i);
+                            String latitude = obj.getString("latitude");
+                            String longitude = obj.getString("longitude");
+                            LatLng coords = new LatLng(Double.parseDouble(latitude), Double.parseDouble(longitude));
+                            liveData.add(coords);
+                            //System.out.println(latitude + ", " + longitude);
 
-                            } catch (JSONException e) {
-                                e.printStackTrace();
-                            }
+                        } catch (JSONException e) {
+                            e.printStackTrace();
                         }
                     }
+
+
+                    for (int i = 0; i < arr_dead.length(); ++i) {
+                        try {
+                            JSONObject obj = arr_dead.getJSONObject(i);
+                            String latitude = obj.getString("latitude");
+                            String longitude = obj.getString("longitude");
+                            LatLng coords = new LatLng(Double.parseDouble(latitude), Double.parseDouble(longitude));
+                            deadData.add(coords);
+                            //System.out.println(latitude + ", " + longitude);
+
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
 
             };
             final Handler handler = new Handler();
@@ -410,7 +430,7 @@ public class MainActivity extends AppCompatActivity
                     System.out.println("EMISSIONS");
                     handler.postDelayed(this, 30000);
                 }
-            }, 30000);
+            }, 10000);
 
 
         } catch (URISyntaxException e) {
@@ -448,7 +468,7 @@ public class MainActivity extends AppCompatActivity
                     .getLastLocation(mGoogleApiClient);
         }
 
-        if(mLastKnownLocation != null) {
+        if (mLastKnownLocation != null) {
             mLatitude = mLastKnownLocation.getLatitude();
             mLongitude = mLastKnownLocation.getLongitude();
         }
@@ -552,9 +572,9 @@ public class MainActivity extends AppCompatActivity
 
 
     @Override
-    public boolean onMarkerClick(Marker marker) {
-        if (!marker.getTag().equals(-1)){
-            LatLng markerLoc = marker.getPosition();
+    public boolean onMarkerClick(final Marker marker) {
+        if (!marker.getTag().equals(-1)) {
+            final LatLng markerLoc = marker.getPosition();
             Location locMarker = new Location("");
             locMarker.setLatitude(markerLoc.latitude);
             locMarker.setLongitude(markerLoc.longitude);
@@ -571,30 +591,6 @@ public class MainActivity extends AppCompatActivity
                 final Animation anim = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.translate_in);
                 final Animation animOut = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.alpha_out);
 
-                anim.setAnimationListener(new Animation.AnimationListener() {
-                    @Override
-                    public void onAnimationStart(Animation animation) {
-
-                    }
-
-                    @Override
-                    public void onAnimationEnd(Animation animation) {
-                        final Handler handler = new Handler();
-                        handler.postDelayed(new Runnable() {
-                            @Override
-                            public void run() {
-                                stub_layout.startAnimation(animOut);
-                                System.out.println("fuk u hombre");
-
-                            }
-                        }, 5000);
-                    }
-
-                    @Override
-                    public void onAnimationRepeat(Animation animation) {
-
-                    }
-                });
 
                 image.startAnimation(anim);
 
@@ -611,6 +607,9 @@ public class MainActivity extends AppCompatActivity
                             @Override
                             public void onAnimationEnd(Animation animation) {
                                 stub_layout.setVisibility(View.INVISIBLE);
+                                // Tell server that garbage has been picked up
+                                socket.emit("pull_pin", markerLoc.latitude, markerLoc.longitude);
+                                marker.remove();
                             }
 
                             @Override
@@ -621,9 +620,6 @@ public class MainActivity extends AppCompatActivity
                     }
                 });
 
-
-                // Tell server that garbage has been picked up
-                socket.emit("pull_pin", marker.getTag(), mLatitude, mLongitude);
 
             } else {
                 Toast.makeText(getApplicationContext(), "You're too far away from this litter", Toast.LENGTH_SHORT).show();
@@ -638,13 +634,13 @@ public class MainActivity extends AppCompatActivity
 
 
     /////// HashMap<Integer, ....>
-            // When we place marker : send to alive list
-            // WHen we throw away litter, send to dead data list
-            // When we remove marker : <now for overlay> <server identifies it as dead data>
-            // SERVER adds to list of dead data and removes from alive data
-            // On poll : sever sends the dead + alive with JSON identifier
-            // Iterate through list check with dead data hashmap
-            // If dead and not in map --> update ground overlay with all fresh dead data
+    // When we place marker : send to alive list
+    // WHen we throw away litter, send to dead data list
+    // When we remove marker : <now for overlay> <server identifies it as dead data>
+    // SERVER adds to list of dead data and removes from alive data
+    // On poll : sever sends the dead + alive with JSON identifier
+    // Iterate through list check with dead data hashmap
+    // If dead and not in map --> update ground overlay with all fresh dead data
 
 
     private HashMap<String, GroundOverlay> overlayMap = new HashMap<>();
@@ -655,7 +651,7 @@ public class MainActivity extends AppCompatActivity
     private static final double OVERLAY_SIZE = .03;
 
     // 3 levels, green, yellow, red for the color of the overlay
-    
+
     private static final BitmapDescriptor[] OVERLAY_IMAGES = new BitmapDescriptor[10000];/* = {
             BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN),
             BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW),
@@ -668,7 +664,7 @@ public class MainActivity extends AppCompatActivity
             // Represents a quadrant that could be covered by a ground overlay
             LatLngBounds bound = getStringToHash(data.get(i));
             String hashBound = getLatLngString(bound.southwest) +
-                             getLatLngString(bound.northeast);
+                    getLatLngString(bound.northeast);
             // Represents the exact coordinate of marked trash
             String hashMark = getLatLngString(data.get(i));
             // We picked up litter at the same location as marked, so remove
@@ -718,7 +714,7 @@ public class MainActivity extends AppCompatActivity
         return bound;
     }
 
-    public String getLatLngString(LatLng obj){
+    public String getLatLngString(LatLng obj) {
         return obj.latitude + " " + obj.longitude;
     }
 
@@ -727,6 +723,4 @@ public class MainActivity extends AppCompatActivity
         for (int i = 0; i < markedData.size(); i++)
             markedSet.add(getLatLngString(markedData.get(i)));
     }
-
-
 }
