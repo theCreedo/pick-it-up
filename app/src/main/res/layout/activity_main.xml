@@ -42,7 +42,6 @@
         android:layout_centerInParent="true">
 
         <ImageView
-            android:rotation="90"
             android:layout_alignParentTop="true"
             android:id="@+id/trash_pic"
             android:layout_width="wrap_content"
@@ -77,6 +76,20 @@
 
     </RelativeLayout>
 
+    <TextView
+        android:id="@+id/facts"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="I love technology"
+        android:textColor="@android:color/black"
+        android:textSize="25sp"
+        android:textStyle="italic"
+        android:gravity="center"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="36dp"
+        android:layout_marginLeft="20dp"
+        android:layout_marginRight="20dp"
+        android:visibility="invisible"/>
 
     <ImageButton
         android:id="@+id/camera_button"

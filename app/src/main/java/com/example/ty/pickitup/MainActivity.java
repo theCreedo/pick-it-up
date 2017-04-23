@@ -1,5 +1,6 @@
 package com.example.ty.pickitup;
 
+
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.ContentResolver;
@@ -42,6 +43,7 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.UiSettings;
 import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
@@ -62,19 +64,12 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
+import java.util.Random;
 
-import clarifai2.api.ClarifaiBuilder;
-import clarifai2.api.ClarifaiClient;
-import clarifai2.dto.input.ClarifaiInput;
-import clarifai2.dto.input.image.ClarifaiImage;
-import clarifai2.dto.model.output.ClarifaiOutput;
-import clarifai2.dto.prediction.Concept;
 import io.socket.client.Ack;
 import io.socket.client.IO;
 import io.socket.client.Socket;
 import io.socket.emitter.Emitter;
-import okhttp3.OkHttpClient;
 
 /**
  * An activity that displays a map showing the place at the device's current location.
@@ -118,7 +113,7 @@ public class MainActivity extends AppCompatActivity
     private static final String KEY_LOCATION = "location";
     private ImageView cameraView;
 
-    private ClarifaiClient client;
+    //private ClarifaiClient client;
     // Camera Stuff
     private static final int TAKE_PICTURE = 1;
     private Uri imageUri;
@@ -126,27 +121,30 @@ public class MainActivity extends AppCompatActivity
     // Shocket
     Socket socket;
 
+    String[] facts = {"9 billion tons of litter ends up in the ocean every year.", "$11.5 billion is spent every year to clean up litter", "50% of littered items are cigarette butts", "75% of people admitted that they littered in the past 5 years", "Men are likely to litter more than women do", "Plastic bags and other plastic garbage thrown into the ocean kill as many as 1,000,000 sea creatures every year.", "More than 1 million species have already faced extinction due to global warming.", "Rainforests have taken thousands of years to form but every second a portion the size of a football field is destroyed", "Thanks to the tremendous amount of reckless waste disposal, we have a garbage island floating in our ocean, mostly comprised of plastics – the size of India, Europe and Mexico combined!", "Plastic bags and other plastic garbage thrown into the ocean kill as many as 1,000,000 sea creatures every year."};
+    TextView fact;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        final Animation alphaIn = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.alpha_in);
+        alphaIn.setDuration(1200);
+        final Animation alphaOut = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.alpha_out);
 
         // Retrieve location and camera position from saved instance state.
         if (savedInstanceState != null) {
             mLastKnownLocation = savedInstanceState.getParcelable(KEY_LOCATION);
             mCameraPosition = savedInstanceState.getParcelable(KEY_CAMERA_POSITION);
         }
-        client = new ClarifaiBuilder("k0KKlwxw1VdIjoelm-rakt1Mf5UF7u9Lyjd4TC7t", "a4e2Re4nZfbJJWYSj6BWBy4FVo4jDraG2HUFt_DJ")
-                .client(new OkHttpClient()) // OPTIONAL. Allows customization of OkHttp by the user
-                .buildSync(); // or use .build() to get a Future<ClarifaiClient>
-
-
+        //client = new ClarifaiBuilder("k0KKlwxw1VdIjoelm-rakt1Mf5UF7u9Lyjd4TC7t", "a4e2Re4nZfbJJWYSj6BWBy4FVo4jDraG2HUFt_DJ")
+        //        .client(new OkHttpClient()) // OPTIONAL. Allows customization of OkHttp by the user
+        //        .buildSync(); // or use .build() to get a Future<ClarifaiClient>
 
 //        client.addConcepts()
 //                .plus(
 //                        Concept.forID("")
 //                ).executeSync();
-//        preferences = getPreferences(MODE_PRIVATE);
         preferences = getSharedPreferences("achievements", MODE_PRIVATE);
 
         // Retrieve the content view that renders the map.
@@ -185,12 +183,60 @@ public class MainActivity extends AppCompatActivity
             @Override
             public void onClick(View v) {
                 int count = preferences.getInt("litter", 0);
-                preferences.edit().putInt("litter", count+1).apply();
+                preferences.edit().putInt("litter", count + 1).apply();
                 findViewById(R.id.camera_container).setVisibility(View.GONE);
                 socket.emit("pull_pin", mLatitude, mLongitude);
+                int n = new Random().nextInt(facts.length);
+                fact.setText(facts[n]);
+                fact.startAnimation(alphaIn);
+
+
 
             }
         });
+        final Animation.AnimationListener alphaInListener = new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {
+                fact.setVisibility(View.VISIBLE);
+            }
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                new Handler().postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        fact.startAnimation(alphaOut);
+
+                    }
+                }, 3000);
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {
+
+            }
+        };
+
+        final Animation.AnimationListener alphaOutListener = new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {
+
+            }
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                fact.setVisibility(View.INVISIBLE);
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {
+
+            }
+        };
+
+        alphaIn.setAnimationListener(alphaInListener);
+        alphaOut.setAnimationListener(alphaOutListener);
+
         leaveButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -207,6 +253,9 @@ public class MainActivity extends AppCompatActivity
                 // Sending an object
                 socket.emit("push_pin", mLatitude, mLongitude);
                 markedSet.add(getLatLngString(marker.getPosition()));
+                int n = new Random().nextInt(facts.length);
+                fact.setText(facts[n]);
+                fact.startAnimation(alphaIn);
 
 
             }
@@ -216,6 +265,8 @@ public class MainActivity extends AppCompatActivity
         stub = (ViewStub) findViewById(R.id.viewStub1);
         stub_layout = stub.inflate();
 
+        // Set fact textview
+        fact = (TextView) findViewById(R.id.facts);
     }
 
 
@@ -373,6 +424,8 @@ public class MainActivity extends AppCompatActivity
         // Use a custom info window adapter to handle multiple lines of text in the
         // info window contents.
         mMap.setOnMarkerClickListener(this);
+        mMap.getUiSettings().setCompassEnabled(false);
+
         mMap.setInfoWindowAdapter(new GoogleMap.InfoWindowAdapter() {
 
             @Override
@@ -467,7 +520,6 @@ public class MainActivity extends AppCompatActivity
             OVERLAY_IMAGES[0] = BitmapDescriptorFactory.fromResource(R.drawable.green);
             OVERLAY_IMAGES[1] = BitmapDescriptorFactory.fromResource(R.drawable.yellow);
             OVERLAY_IMAGES[2] = BitmapDescriptorFactory.fromResource(R.drawable.red);
-
 
 
         } catch (URISyntaxException e) {
@@ -645,6 +697,9 @@ public class MainActivity extends AppCompatActivity
                             @Override
                             public void onAnimationEnd(Animation animation) {
                                 stub_layout.setVisibility(View.INVISIBLE);
+                                int count = preferences.getInt("litter", 0);
+                                preferences.edit().putInt("litter", count + 1).apply();
+
                                 // Tell server that garbage has been picked up
                                 socket.emit("pull_pin", markerLoc.latitude, markerLoc.longitude);
                                 marker.remove();
@@ -724,7 +779,7 @@ public class MainActivity extends AppCompatActivity
             // to the overlayMap
             else {
                 litterMap.put(hashBound, 1);
-                if(!overlayMap.containsKey(hashBound)) {
+                if (!overlayMap.containsKey(hashBound)) {
                     GroundOverlayOptions g = new GroundOverlayOptions()
                             .positionFromBounds(bound)
                             .visible(true)
@@ -756,14 +811,15 @@ public class MainActivity extends AppCompatActivity
 
     public double roundToTwoPlaces(double number) {
         number = Math.round(number * 100);
-        return number/100;
+        return number / 100;
     }
 
-    public String getLatLngString(LatLng obj){
+    public String getLatLngString(LatLng obj) {
         return obj.latitude + " " + obj.longitude;
     }
 
     ArrayList<Marker> markers = new ArrayList<>();
+
     public void updateEverything(ArrayList<LatLng> liveData, ArrayList<LatLng> deadData) {
         markedSet = new HashSet<>();
         for (int i = 0; i < liveData.size(); i++)
@@ -775,7 +831,7 @@ public class MainActivity extends AppCompatActivity
             mike_ermantrout.remove();
         }
 
-        for(String pair : markedSet) {
+        for (String pair : markedSet) {
             String[] arr = pair.split(" ");
             double latitude = Double.parseDouble(arr[0]);
             double longitude = Double.parseDouble(arr[1]);
