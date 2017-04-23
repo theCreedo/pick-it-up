@@ -121,7 +121,14 @@ public class MainActivity extends AppCompatActivity
     // Shocket
     Socket socket;
 
-    String[] facts = {"9 billion tons of litter ends up in the ocean every year.", "$11.5 billion is spent every year to clean up litter", "50% of littered items are cigarette butts", "75% of people admitted that they littered in the past 5 years", "Men are likely to litter more than women do", "Plastic bags and other plastic garbage thrown into the ocean kill as many as 1,000,000 sea creatures every year.", "More than 1 million species have already faced extinction due to global warming.", "Rainforests have taken thousands of years to form but every second a portion the size of a football field is destroyed", "Thanks to the tremendous amount of reckless waste disposal, we have a garbage island floating in our ocean, mostly comprised of plastics – the size of India, Europe and Mexico combined!", "Plastic bags and other plastic garbage thrown into the ocean kill as many as 1,000,000 sea creatures every year."};
+    String[] facts = {"9 billion tons of litter ends up in the ocean every year.", "$11.5 billion is spent every year to clean up litter", "50% of littered items are cigarette butts", "75% of people admitted that they littered in the past 5 years", "Plastic bags and other plastic garbage thrown into the ocean kill as many as 1,000,000 sea creatures every year.", "More than 1 million species have already faced extinction due to global warming.", "Rainforests have taken thousands of years to form but every second a portion the size of a football field is destroyed", "Thanks to the tremendous amount of reckless waste disposal, we have a garbage island floating in our ocean, mostly comprised of plastics – the size of India, Europe and Mexico combined!", "Plastic bags and other plastic garbage thrown into the ocean kill as many as 1,000,000 sea creatures every year.", "99 of the things we buy are trashed in the next six months",
+            "Tobacco products make up more than one third of existing litter",
+            "Use cloth bags when shopping to reduce plastic waste",
+            "If every person in Texas picked up just two pieces of trash every month, our highways would be completely litter-free in just one year",
+            "Single-use fast food, snack, tobacco, beverage, and other packaging make up nearly 46% of litter 4 inches and larger in the U.S.",
+            "Plastic litter can take up to 600 years to degrade",
+            "Aluminum cans can take 200 - 500 years to degrade",
+            "Glass can take over a million years to degrade"};
     TextView fact;
 
     @Override
@@ -189,7 +196,6 @@ public class MainActivity extends AppCompatActivity
                 int n = new Random().nextInt(facts.length);
                 fact.setText(facts[n]);
                 fact.startAnimation(alphaIn);
-
 
 
             }
