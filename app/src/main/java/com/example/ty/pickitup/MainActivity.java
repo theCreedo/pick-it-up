@@ -436,7 +436,7 @@ public class MainActivity extends AppCompatActivity
                     handler.postDelayed(this, 30000);
                     updateEverything(liveData, deadData);
                 }
-            }, 10000);
+            }, 0);
 
             OVERLAY_IMAGES[0] = GREEN; OVERLAY_IMAGES[1] = YELLOW; OVERLAY_IMAGES[2] = RED;
 
