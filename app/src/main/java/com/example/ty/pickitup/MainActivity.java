@@ -62,11 +62,19 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 
+import clarifai2.api.ClarifaiBuilder;
+import clarifai2.api.ClarifaiClient;
+import clarifai2.dto.input.ClarifaiInput;
+import clarifai2.dto.input.image.ClarifaiImage;
+import clarifai2.dto.model.output.ClarifaiOutput;
+import clarifai2.dto.prediction.Concept;
 import io.socket.client.Ack;
 import io.socket.client.IO;
 import io.socket.client.Socket;
 import io.socket.emitter.Emitter;
+import okhttp3.OkHttpClient;
 
 /**
  * An activity that displays a map showing the place at the device's current location.
@@ -111,6 +119,7 @@ public class MainActivity extends AppCompatActivity
     private static final String KEY_LOCATION = "location";
     private ImageView cameraView;
 
+    private ClarifaiClient client;
     // Camera Stuff
     private static final int TAKE_PICTURE = 1;
     private Uri imageUri;
@@ -128,8 +137,17 @@ public class MainActivity extends AppCompatActivity
             mLastKnownLocation = savedInstanceState.getParcelable(KEY_LOCATION);
             mCameraPosition = savedInstanceState.getParcelable(KEY_CAMERA_POSITION);
         }
+        client = new ClarifaiBuilder("k0KKlwxw1VdIjoelm-rakt1Mf5UF7u9Lyjd4TC7t", "a4e2Re4nZfbJJWYSj6BWBy4FVo4jDraG2HUFt_DJ")
+                .client(new OkHttpClient()) // OPTIONAL. Allows customization of OkHttp by the user
+                .buildSync(); // or use .build() to get a Future<ClarifaiClient>
 
-        preferences = getPreferences(MODE_PRIVATE);
+
+
+//        client.addConcepts()
+//                .plus(
+//                        Concept.forID("")
+//                ).executeSync();
+//        preferences = getPreferences(MODE_PRIVATE);
 
         // Retrieve the content view that renders the map.
         setContentView(R.layout.activity_main);
@@ -218,6 +236,17 @@ public class MainActivity extends AppCompatActivity
     public void takePhoto(View view) {
         Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         File photo = new File(Environment.getExternalStorageDirectory(), "Pic.jpg");
+
+//        final List<ClarifaiOutput<Concept>> predictionResults =
+//                client.getDefaultModels().generalModel() // You can also do Clarifai.getModelByID("id") to get custom models
+//                        .predict()
+//                        .withInputs(
+//                                ClarifaiInput.forImage(ClarifaiImage.of(photo))
+//                        )
+//                        .executeSync().get();
+//
+//        predictionResults.get(0).data().get(0).name();
+
         intent.putExtra(MediaStore.EXTRA_OUTPUT,
                 Uri.fromFile(photo));
         imageUri = Uri.fromFile(photo);
