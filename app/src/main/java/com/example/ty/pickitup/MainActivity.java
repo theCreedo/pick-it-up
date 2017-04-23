@@ -148,6 +148,7 @@ public class MainActivity extends AppCompatActivity
 //                        Concept.forID("")
 //                ).executeSync();
 //        preferences = getPreferences(MODE_PRIVATE);
+        preferences = getSharedPreferences("achievements", MODE_PRIVATE);
 
         // Retrieve the content view that renders the map.
         setContentView(R.layout.activity_main);
@@ -184,9 +185,10 @@ public class MainActivity extends AppCompatActivity
         pickupButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                int count = preferences.getInt("litter_count", 0);
-                preferences.edit().putInt("litter_count", ++count);
+                int count = preferences.getInt("litter", 0);
+                preferences.edit().putInt("litter", count+1).apply();
                 findViewById(R.id.camera_container).setVisibility(View.GONE);
+                socket.emit("pull_pin", mLatitude, mLongitude);
 
             }
         });

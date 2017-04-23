@@ -42,11 +42,12 @@
         android:layout_centerInParent="true">
 
         <ImageView
+            android:rotation="90"
             android:layout_alignParentTop="true"
             android:id="@+id/trash_pic"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:scaleType="fitXY"
+            android:scaleType="fitCenter"
             android:visibility="gone"
              />
 
